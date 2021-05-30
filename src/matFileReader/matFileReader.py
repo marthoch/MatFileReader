@@ -1,7 +1,15 @@
-import h5py
+#!/usr/bin/env python3
+"""MatHDF5Reader reads Matlab .mat file which are based on HDF5 in Python.
+Mat-file version 7.3 are based on HDF5.
+
+save('test_basic.mat', 'data', '-v7.3')
+
+"""
+
 import logging
-import numpy as np
 import copy
+import numpy as np
+import h5py
 
 class MatHDF5Reader_cellarray:
     """MatHDF5Reader_cellarray
@@ -93,7 +101,7 @@ path: {path}""".format(fn=self.filename,
         if isinstance(v, h5py.Group):
             self.group = v
         else:
-            logging.error('{} is not a group'.foramt(path))
+            logging.error('{} is not a group'.format(path))
 
     def ls(self):
         print(self.pwd())
