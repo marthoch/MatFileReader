@@ -1,6 +1,7 @@
 import h5py
 import logging
 import numpy as np
+import copy
 
 class MatHDF5Reader_cellarray:
     """MatHDF5Reader_cellarray
@@ -20,7 +21,12 @@ class MatHDF5Reader_cellarray:
 
 
     def __getitem__(self, key):
-        val = self.mat.hdf5[self.dataset[()][key][0]][()]
+        val = self.mat.hdf5[self.dataset[()][key][0]]
+        if isinstance(val, h5py.Group): # FIXME:
+            m = copy.copy(self.mat)
+            m.group = val
+            return m
+        val = val[()]
         val = val if val.ndim < 2 else val.swapaxes(-1, -2)
         return val
 
@@ -72,6 +78,7 @@ path: {path}""".format(fn=self.filename,
     def open(self):
         if self.hdf5 is None:
             self.hdf5 = h5py.File(self.filename, 'r')
+            self.group = self.hdf5['/']
         else:
             logging.error('There is already a file opened.')
 
@@ -80,7 +87,13 @@ path: {path}""".format(fn=self.filename,
         self.hdf5 = None
 
     def cd(self, path='/'):
-        self.group = self.hdf5[path]
+        if path == '..':
+            path = self.pwd().rsplit('/',1)[0]
+        v = self.group[path]
+        if isinstance(v, h5py.Group):
+            self.group = v
+        else:
+            logging.error('{} is not a group'.foramt(path))
 
     def ls(self):
         print(self.pwd())
