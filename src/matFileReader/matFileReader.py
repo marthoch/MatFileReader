@@ -7,6 +7,8 @@ save('test_basic.mat', 'data', '-v7.3')
 """
 
 import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 import copy
 import numpy as np
 import h5py
@@ -38,6 +40,14 @@ class MatHDF5Reader_cellarray:
         val = val if val.ndim < 2 else val.swapaxes(-1, -2)
         return val
 
+    def get_as_str(self, key):
+        val = self.mat.hdf5[self.dataset[()][key][0]]
+        if isinstance(val, h5py.Dataset):
+            vn = val[()]
+            if val.dtype == np.uint16:
+                return "".join([chr(c) for c in vn.flat])
+        return None
+
     def __iter__(self):
         return self
 
@@ -47,6 +57,23 @@ class MatHDF5Reader_cellarray:
             raise StopIteration
         return self[self.iter_index]
 
+    def iter_text(self):
+        return MatHDF5Reader_cellarray_iter_text(self)
+
+class MatHDF5Reader_cellarray_iter_text:
+
+    def __init__(self, cellarray):
+        self.cellarray = cellarray
+        self.iter_index = -1
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.iter_index += 1
+        if self.iter_index >= len(self.cellarray.dataset):
+            raise StopIteration
+        return self.cellarray.get_as_str(self.iter_index)
 
 class MatHDF5Reader:
     """
@@ -72,7 +99,12 @@ class MatHDF5Reader:
         self.hdf5 = None
         self.open()
         self.cd()
-        self.refs = self.hdf5['/#refs#']
+        self.refs = None
+        try:
+            self.refs = self.hdf5['/#refs#']
+        except KeyError as e:
+            logger.warning('KeyError:' + str(e) + f' >{filename}<')
+
 
     def __str__(self):
         return """MatHDF5Reader('{fn}')
