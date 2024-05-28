@@ -180,4 +180,19 @@ path: {path}""".format(fn=self.filename,
     def __getitem__(self, key):
         return self.get(key)
 
+    def items(self):
+        return MatHDF5Reader_iter_items(self)
+
+class MatHDF5Reader_iter_items:
+    def __init__(self, mat):
+        self.mat = mat
+        self.iter = iter(self.mat.group.items())
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        k, v = self.iter.__next__()
+        return k, self.mat[k].squeeze()
+
 # eof
